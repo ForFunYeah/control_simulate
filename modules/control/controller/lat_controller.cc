@@ -211,15 +211,15 @@ Status LatController::Init(std::shared_ptr<DependencyInjector> injector,
    (-1.0 * (l_f^2 * c_f + l_r^2 * c_r) / i_z) / v;]
   */
   matrix_a_(0, 1) = 1.0;
-  matrix_a_(1, 2) = (2.0*Cf_+2.0*Cr_)/mass_;
+  matrix_a_(1, 2) = (2.0*cf_+2.0*cr_)/mass_;
   matrix_a_(2, 3) = 1.0;
-  matrix_a_(3, 2) = (2.0*Cf_*lf_-2.0*Cr_*lr_)/iz_;
+  matrix_a_(3, 2) = (2.0*cf_*lf_-2.0*cr_*lr_)/iz_;
 
   matrix_a_coeff_ = Matrix::Zero(matrix_size, matrix_size);
-  matrix_a_coeff_(1, 1) = -1.0*(2.0*Cf_+2.0*Cr_)/mass_;
-  matrix_a_coeff_(1, 3) =  (lr_ * Cr_ - lf_ * Cf_) / mass_;//注释与实验大纲文档不一致，此处以注释为准
-  matrix_a_coeff_(3, 1) =  (lr_ * Cr_ - lf_ * Cf_) / iz_;//注释与实验大纲文档不一致，此处以注释为准
-  matrix_a_coeff_(3, 3) = -1.0 * (lf_^2.0 * Cf_ + lr_^2.0 * Cr_) / iz_;
+  matrix_a_coeff_(1, 1) = -1.0*(2.0*cf_+2.0*cr_)/mass_;
+  matrix_a_coeff_(1, 3) =  (lr_ * cr_ - lf_ * cf_) / mass_;//注释与实验大纲文档不一致，此处以注释为准
+  matrix_a_coeff_(3, 1) =  (lr_ * cr_ - lf_ * cf_) / iz_;//注释与实验大纲文档不一致，此处以注释为准
+  matrix_a_coeff_(3, 3) = -1.0 * (lf_^2.0 * cf_ + lr_^2.0 * cr_) / iz_;
 
   /*
   b = [0.0, c_f / m, 0.0, l_f * c_f / i_z]^T
@@ -482,13 +482,13 @@ Status LatController::ComputeControlCommand(
     matrix_q_updated_(2, 2) =
         matrix_q_(2, 2) * heading_err_interpolation_->Interpolate(
                               std::fabs(vehicle_state->linear_velocity()));
-    common::math::SolveLQRProblem((0910-question), (0910-question), (0910-question),
-                                  (0910-question), (0910-question), (0910-question),
-                                  (0910-question)&matrix_k_);
+    common::math::SolveLQRProblem(matrix_adc, matrix_bdc, matrix_q,
+                                  matrix_r, lqr_eps, lqr_max_iteration,
+                                  &matrix_k);
   } else {
-    common::math::SolveLQRProblem((0910-question), (0910-question), (0910-question),
-                                  (0910-question), (0910-question), (0910-question),
-                                  (0910-question));
+    common::math::SolveLQRProblem(matrix_adc, matrix_bdc, matrix_q,
+                                  matrix_r, lqr_eps, lqr_max_iteration,
+                                  &matrix_k);
   }
 
   // feedback = - K * state
@@ -519,8 +519,8 @@ Status LatController::ComputeControlCommand(
       }
     }
   }
-  steer_angle = (0910-question) + (0910-question) +
-                steer_angle_feedback_augment;
+  steer_angle = steer_angle_feedback + steer_angle_feedforward +
+                steer_angle_feedback_augment;//不确定
 
   // Compute the steering command limit with the given maximum lateral
   // acceleration
@@ -743,7 +743,7 @@ void LatController::UpdateMatrixCompound() {
 
 double LatController::ComputeFeedForward(double ref_curvature) const {
   const double kv =
-      (0910-question) - (0910-question);
+      (lr_*mass_)/(2.0*cf_*(lf_+lr_) - (lf_*mass_)/(2.0*cr_*(lf_+lr_);
 
   // Calculate the feedforward term of the lateral controller; then change it
   // from rad to %
@@ -755,10 +755,10 @@ double LatController::ComputeFeedForward(double ref_curvature) const {
                                   steer_single_direction_max_degree_ * 100;
   } else {
     steer_angle_feedforwardterm =
-        ((0910-question) + (0910-question) -
-         (0910-question) *
-             ((0910-question) -
-              (0910-question)) *
+        (wheelbase_*ref_curvature + kv*(v*v)*ref_curvature -
+         matrix_k_(0,2) *
+             (lr_/(2.0*cf_) -
+              (lf_/(2.0*cr_))*((mass_*(v*v))*ref_curvature/wheelbase_)) *
         180 / M_PI * steer_ratio_ / steer_single_direction_max_degree_ * 100;
   }
 
