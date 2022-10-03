@@ -210,16 +210,16 @@ Status LatController::Init(std::shared_ptr<DependencyInjector> injector,
    0.0, ((lr * cr - lf * cf) / i_z) / v, (l_f * c_f - l_r * c_r) / i_z,
    (-1.0 * (l_f^2 * c_f + l_r^2 * c_r) / i_z) / v;]
   */
-  matrix_a_(0, 1) = (0910-question);
-  matrix_a_(1, 2) = (0910-question);
-  matrix_a_(2, 3) = (0910-question);
-  matrix_a_(3, 2) = (0910-question);
+  matrix_a_(0, 1) = 1.0;
+  matrix_a_(1, 2) = (2.0*Cf_+2.0*Cr_)/mass_;
+  matrix_a_(2, 3) = 1.0;
+  matrix_a_(3, 2) = (2.0*Cf_*lf_-2.0*Cr_*lr_)/iz_;
 
   matrix_a_coeff_ = Matrix::Zero(matrix_size, matrix_size);
-  matrix_a_coeff_(1, 1) = (0910-question);
-  matrix_a_coeff_(1, 3) = (0910-question);
-  matrix_a_coeff_(3, 1) = (0910-question);
-  matrix_a_coeff_(3, 3) = (0910-question);
+  matrix_a_coeff_(1, 1) = -1.0*(2.0*Cf_+2.0*Cr_)/mass_;
+  matrix_a_coeff_(1, 3) =  (lr_ * Cr_ - lf_ * Cf_) / mass_;//注释与实验大纲文档不一致，此处以注释为准
+  matrix_a_coeff_(3, 1) =  (lr_ * Cr_ - lf_ * Cf_) / iz_;//注释与实验大纲文档不一致，此处以注释为准
+  matrix_a_coeff_(3, 3) = -1.0 * (lf_^2.0 * Cf_ + lr_^2.0 * Cr_) / iz_;
 
   /*
   b = [0.0, c_f / m, 0.0, l_f * c_f / i_z]^T
