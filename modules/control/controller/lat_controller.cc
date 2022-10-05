@@ -520,7 +520,7 @@ Status LatController::ComputeControlCommand(
     }
   }
   steer_angle = steer_angle_feedback + steer_angle_feedforward +
-                steer_angle_feedback_augment;//不确定
+                steer_angle_feedback_augment;
 
   // Compute the steering command limit with the given maximum lateral
   // acceleration
@@ -743,7 +743,7 @@ void LatController::UpdateMatrixCompound() {
 
 double LatController::ComputeFeedForward(double ref_curvature) const {
   const double kv =
-      (lr_*mass_)/(2.0*cf_*(lf_+lr_) - (lf_*mass_)/(2.0*cr_*(lf_+lr_);
+      (lr_*mass_)/(2.0*cf_*wheelbase_) - (lf_*mass_)/(2.0*cr_*wheelbase_);
 
   // Calculate the feedforward term of the lateral controller; then change it
   // from rad to %
